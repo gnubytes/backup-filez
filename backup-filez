@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# Backblaze B2 configuration variables
+B2_ACCOUNT="abc"
+B2_KEY="def"
+B2_BUCKET="ghi"
+B2_DIR="xyz-backup"
+
+# Local directory to backup
+LOCAL_DIR="/home/gnybytes/backup"
+
+# GPG key (last 8 characters)
+ENC_KEY="AAAAAA"
+SGN_KEY="BBBBBB"
+export PASSPHRASE="yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+export SIGN_PASSPHRASE="zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" 
+
+# Remove files older than 120 days
+duplicity \
+ --sign-key $SGN_KEY --encrypt-key $ENC_KEY \
+ remove-older-than 120D --force \
+ b2://${B2_ACCOUNT}:${B2_KEY}@${B2_BUCKET}/${B2_DIR}
+
+# Perform the backup, make a full backup if it's been over 2 months
+duplicity \
+ --sign-key $SGN_KEY --encrypt-key $ENC_KEY \
+ --full-if-older-than 2M \
+ ${LOCAL_DIR} b2://${B2_ACCOUNT}:${B2_KEY}@${B2_BUCKET}/${B2_DIR}
+
+# Cleanup failures
+duplicity \
+ cleanup --force \
+ --sign-key $SGN_KEY --encrypt-key $ENC_KEY \
+ b2://${B2_ACCOUNT}:${B2_KEY}@${B2_BUCKET}/${B2_DIR}
+
+# Show collection-status
+duplicity collection-status \
+ --sign-key $SGN_KEY --encrypt-key $ENC_KEY \
+  b2://${B2_ACCOUNT}:${B2_KEY}@${B2_BUCKET}/${B2_DIR}
+
+# Unset variables
+unset B2_ACCOUNT
+unset B2_KEY
+unset B2_BUCKET
+unset B2_DIR
+unset LOCAL_DIR
+unset ENC_KEY
+unset SGN_KEY
+unset PASSPHRASE
+unset SIGN_PASSPHRASE 
